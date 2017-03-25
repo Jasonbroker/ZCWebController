@@ -5,9 +5,21 @@
 //  Created by Jason on 25/03/2017.
 //  Copyright © 2017 Jason Digital Studio. All rights reserved.
 //
-#import <NJKWebViewProgress/NJKWebViewProgressView.h>
 
-NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
+#import "ZCWebController.h"
+
+@interface ZCWebViewProgressView : UIView
+
+@property (nonatomic) float progress;
+
+@property (nonatomic) UIView *progressBarView;
+@property (nonatomic) NSTimeInterval barAnimationDuration; // default 0.1
+@property (nonatomic) NSTimeInterval fadeAnimationDuration; // default 0.27
+@property (nonatomic) NSTimeInterval fadeOutDelay; // default 0.1
+
+- (void)setProgress:(float)progress animated:(BOOL)animated;
+
+@end
 
 @interface WKWebViewConfiguration (defaultConfigration)
 
@@ -15,31 +27,35 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 
 @end
 
-@interface SNWebViewController ()
+@interface ZCWebController ()
 
 @end
 
-@implementation SNWebViewController {
+@implementation ZCWebController {
     
     NSString *_url;
     NSString *_initialTitle;
     BOOL _notUsingCommon;
     
     // 界面上方的进度条展示
-    NJKWebViewProgressView *_progressView;
+    ZCWebViewProgressView *_progressView;
     
     NSURL *_currentMainUrl;
 }
 
-- (id)initWithQuery:(NSDictionary *)query {
-    self = [super initWithQuery: query];
+- (instancetype)initWithUrl:(NSString *)url {
+    self = [self initWithNibName:nil bundle:nil];
     if (self) {
-        
+        _url = [url copy];
+    }
+    return self;
+}
+
+- (id)initWithQuery:(NSDictionary *)query {
+    self = [self initWithUrl:query[@"url"]];
+    if (self) {
         _initialTitle = query[@"title"];
         self.title = _initialTitle;
-        _url = query[@"url"];
-        _notUsingCommon = [query[WebControllerQueryNotUsingCommonstate] boolValue];
-        
     }
     return self;
 }
@@ -67,10 +83,10 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
     _webView.navigationDelegate = self;
     [self.view addSubview: _webView];
     
-    // 进度条
-    _progressView = [[NJKWebViewProgressView alloc] initWithFrame: CGRectMake(0, self.topOffset, self.view.width, 2)];
+    // progress view
+    _progressView = [[ZCWebViewProgressView alloc] initWithFrame: CGRectMake(0, 0, CGRectGetWidth(self.view.bounds), 2)];
     _progressView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _progressView.progressBarView.backgroundColor = RGBCOLOR_HEX(0xff8200);
+    _progressView.progressBarView.backgroundColor = [UIColor whiteColor];
     [self.view addSubview: _progressView];
     
     // 添加进度监听
@@ -79,19 +95,8 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
                   options:NSKeyValueObservingOptionNew
                   context:nil];
     
-    if (_notUsingCommon) {
-        [self loadUrl: _url];
-    } else {
-        [self loadUrl: [self getCommonStatWithUrl: _url]];
-    }
+    [self loadUrl: _url];
 }
-
-- (NSString*)getCommonStatWithUrl:(NSString*)url {
-    NIDASSERT(NO && @"子类需要重写这个方法， 返回带参数的url");
-    //    return [url urlPathWithCommonStat];
-    return url;
-}
-
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
 }
@@ -142,14 +147,13 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 }
 
 - (void)loadUrl:(NSString*)url {
-    NIDPRINT(@"loading url is %@", url);
     [_webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:url]]];
 }
 
 #pragma mark - UIDelegate (on calling time sequence)
 //  Decides whether to allow or cancel a navigation.
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    NIDPRINT(@"");
+    
     decisionHandler([self webView:webView policyForNavigationAction:navigationAction]);
 }
 
@@ -160,25 +164,25 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 
 //  Start ProvisionNavigation loading web content. Do Things like spinning an activity indicator On the status bar.
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NIDPRINT(@"");
+    
     // [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
 }
 
 //  Decides whether to allow or cancel a navigation after its response is known.
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
-    NIDPRINT(@"");
+    
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 //  Response has been allowed.
 - (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
-    NIDPRINT(@"");
+    
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NIDPRINT(@"");
+    
     // [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    if ([_initialTitle isNonEmpty] && ![_webView canGoBack]) {
+    if (!_initialTitle.length && ![_webView canGoBack]) {
         self.title = _initialTitle;
     }else {
         // get title from html's document.title
@@ -189,7 +193,6 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 /* Error handling */
 // Called after an error occured, while the web view is loading content. Commonly network error, time out error .etc
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
-    NIDPRINT(@"%@", error);
     // [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
     
     NSURL *errorUrl = error.userInfo[NSURLErrorFailingURLErrorKey];
@@ -214,7 +217,7 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 
 // Called when an error occurs during navigation.
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
-    NIDPRINT(@"");
+    
     // [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
     // [MBProgressHUD showErrorWithStatus: @"网络连接错误"];
     
@@ -283,3 +286,65 @@ NSString *WebControllerQueryNotUsingCommonstate = @"notUsingCommon";
 }
 
 @end
+
+@implementation ZCWebViewProgressView
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self configureViews];
+    }
+    return self;
+}
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    [self configureViews];
+}
+
+- (void)configureViews {
+    self.userInteractionEnabled = NO;
+    self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _progressBarView = [[UIView alloc] initWithFrame:self.bounds];
+    _progressBarView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+    UIColor *tintColor = [UIColor colorWithRed:22.f / 255.f green:126.f / 255.f blue:251.f / 255.f alpha:1.0]; // iOS7 Safari bar color
+    if ([UIApplication.sharedApplication.delegate.window respondsToSelector:@selector(setTintColor:)] && UIApplication.sharedApplication.delegate.window.tintColor) {
+        tintColor = UIApplication.sharedApplication.delegate.window.tintColor;
+    }
+    _progressBarView.backgroundColor = tintColor;
+    [self addSubview:_progressBarView];
+    
+    _barAnimationDuration = 0.27f;
+    _fadeAnimationDuration = 0.27f;
+    _fadeOutDelay = 0.1f;
+}
+
+- (void)setProgress:(float)progress {
+    [self setProgress:progress animated:NO];
+}
+
+- (void)setProgress:(float)progress animated:(BOOL)animated {
+    BOOL isGrowing = progress > 0.0;
+    [UIView animateWithDuration:(isGrowing && animated) ? _barAnimationDuration : 0.0 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        CGRect frame = _progressBarView.frame;
+        frame.size.width = progress * self.bounds.size.width;
+        _progressBarView.frame = frame;
+    } completion:nil];
+    
+    if (progress >= 1.0) {
+        [UIView animateWithDuration:animated ? _fadeAnimationDuration : 0.0 delay:_fadeOutDelay options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            _progressBarView.alpha = 0.0;
+        } completion:^(BOOL completed){
+            CGRect frame = _progressBarView.frame;
+            frame.size.width = 0;
+            _progressBarView.frame = frame;
+        }];
+    } else {
+        [UIView animateWithDuration:animated ? _fadeAnimationDuration : 0.0 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            _progressBarView.alpha = 1.0;
+        } completion:nil];
+    }
+}
+
+@end
+

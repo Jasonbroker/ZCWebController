@@ -18,8 +18,10 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    
-    
+    ZCWebController *vc = [[ZCWebController alloc] initWithUrl:@"https://www.baidu.com"];
+    [self.view addSubview:vc.view];
+    vc.progressBarColor = [UIColor redColor];
+    vc.view.frame = self.view.bounds;
 }
 
 
