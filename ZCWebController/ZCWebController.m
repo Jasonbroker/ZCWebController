@@ -60,10 +60,6 @@
     return self;
 }
 
-- (BOOL)needScrollView {
-    return NO;
-}
-
 - (void)dealloc {
     // 取消kvo
     [self.webView removeObserver:self forKeyPath:@"estimatedProgress"];
@@ -99,37 +95,6 @@
 }
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-}
-
-- (void)backToLastController:(id)sender {
-    
-    if ([_webView canGoBack]) {
-        [_webView goBack];
-        [self addCloseButton];
-        
-    }else{
-        
-        [self.navigationController popViewControllerAnimated:YES];
-    }
-}
-
-- (void)addCloseButton {
-    //返回按钮
-    //    UIView *parentView = [[UIView alloc] initWithFrame:CGRectMake(0, 0,90, 30)];
-    //    UIButton *backBtn = [[UIButton alloc] initWithFrame:CGRectMake(-5, 0, 40, 30)];
-    //    [backBtn setImage: [[FOResource load: @"back_right"] imageWithTintColor: RGBCOLOR_HEX(0x525252)] forState:UIControlStateNormal];
-    //    [backBtn setImage: [[FOResource load: @"back_right"] imageWithTintColor: RGBCOLOR_HEX(0x323232)] forState:UIControlStateHighlighted];
-    //    [backBtn addTarget:self action:@selector(backBtnClick:) forControlEvents:UIControlEventTouchUpInside];
-    //    [parentView addSubview:backBtn];
-    //
-    //    //关闭按钮
-    //    UIButton *closeButton = [[UIButton alloc] initWithFrame:CGRectMake(backBtn.right-10, 0, 50, 30)];
-    //    [closeButton addTarget:self action:@selector(closeBtnClick:) forControlEvents:UIControlEventTouchUpInside];
-    //    [closeButton setTitle:@"关闭" forState:UIControlStateNormal];
-    //    [closeButton setTitleColor:RGBCOLOR_HEX(0x525252) forState:UIControlStateNormal];
-    //    [parentView addSubview:closeButton];
-    //    UIBarButtonItem *customBarButtomItem = [[UIBarButtonItem alloc] initWithCustomView:parentView];
-    //    self.navigationItem.leftBarButtonItem = customBarButtomItem;
 }
 
 - (void)backBtnClick:(UIButton *)sender {
